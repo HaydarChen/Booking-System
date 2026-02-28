@@ -1,0 +1,8 @@
+# Root: ignore common build/output dirs from backend and frontend
+/backend/target/
+/frontend/.next/
+/frontend/node_modules/
+.env
+.env.local
+*.log
+.DS_Store
