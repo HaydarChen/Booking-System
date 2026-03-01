@@ -13,8 +13,4 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     Optional<Booking> findByIdempotencyKey(String idempotencyKey);
 
-    List<Booking> findTop100ByStatusAndExpiresAtBeforeOrderByExpiresAtAsc(
-            BookingStatus status,
-            OffsetDateTime now
-    );
 }

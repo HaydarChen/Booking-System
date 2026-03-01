@@ -6,6 +6,8 @@ import com.yourname.booking.service.BookingService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {
@@ -18,9 +20,14 @@ public class BookingController {
 
     @PostMapping
     public BookingResponse create(
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateBookingRequest request
     ) {
         return bookingService.createBooking(request, idempotencyKey);
+    }
+
+    @GetMapping("/{id}")
+    public BookingResponse get(@PathVariable UUID id) {
+        return bookingService.get(id);
     }
 }
