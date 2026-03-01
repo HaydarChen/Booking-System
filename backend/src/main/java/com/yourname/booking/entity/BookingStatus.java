@@ -2,7 +2,7 @@ package com.yourname.booking.entity;
 
 public enum BookingStatus {
     PENDING_PAYMENT,
-    CONFIRMER,
+    CONFIRMED,
     CANCELLED,
     EXPIRED
 }

@@ -28,7 +28,7 @@ public class Payment {
     @Column(name = "provider_ref", length = 120)
     private String providerRef;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
     @Column(name = "created_at", nullable = false)
@@ -38,6 +38,9 @@ public class Payment {
     void prePersist() {
         this.createdAt = OffsetDateTime.now();
     }
+
+    @Column(name = "paid_at")
+    private OffsetDateTime paidAt;
 
     // ===== getters/setters =====
     public Long getId() { return id; }
@@ -50,4 +53,12 @@ public class Payment {
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
+
+    public OffsetDateTime getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(OffsetDateTime paidAt) {
+        this.paidAt = paidAt;
+    }
 }
