@@ -61,13 +61,15 @@ public class Inventory {
     }
 
     public void reserve(int qty) {
-        if (!canReserve(qty)) throw new IllegalStateException("Insufficient inventory");
+        if (qty < 0) throw new IllegalArgumentException("quantity must be > 0");
+        if (available < qty) throw new IllegalStateException("insufficient inventory");
         this.available -= qty;
     }
 
     public void release(int qty) {
         if (qty <= 0) return;
         this.available += qty;
+        if (this.available > this.totalCapacity) this.available = this.totalCapacity;
     }
 
     // ===== getters/setters (generate via IDE) =====

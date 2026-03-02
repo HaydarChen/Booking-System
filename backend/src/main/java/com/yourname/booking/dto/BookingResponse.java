@@ -7,9 +7,9 @@ import java.util.UUID;
 
 public record BookingResponse(
     UUID id,
-    Long InventoryId,
+    Long inventoryId,
     int quantity,
     BookingStatus status,
-    OffsetDateTime expiredAt
+    OffsetDateTime expiresAt
 ) {
 }

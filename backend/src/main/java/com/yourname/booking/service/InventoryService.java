@@ -9,6 +9,7 @@ import com.yourname.booking.repository.InventoryRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InventoryService {
@@ -27,6 +28,7 @@ public class InventoryService {
         return page.map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public AvailabilityResponse getAvailability(Long id) {
         Inventory inv = inventoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Inventory not found: "+ id));

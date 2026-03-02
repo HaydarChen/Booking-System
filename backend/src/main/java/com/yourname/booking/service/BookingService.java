@@ -12,6 +12,8 @@ import com.yourname.booking.repository.PaymentRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -29,6 +31,15 @@ public class BookingService {
         this.bookingRepository = bookingRepository;
         this.inventoryRepository = inventoryRepository;
         this.paymentRepository = paymentRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BookingResponse> list(BookingStatus status, Pageable pageable) {
+        Page<Booking> page = (status == null)
+                ? bookingRepository.findAll(pageable)
+                : bookingRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+
+        return page.map(this::toResponse);
     }
 
     @Transactional
@@ -62,7 +73,7 @@ public class BookingService {
         booking.setInventory(inventory);
         booking.setQuantity(request.quantity());
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
-        booking.setExpiresAt(OffsetDateTime.now().plusMinutes(HOLD_MINUTES));
+        booking.setExpiresAt(OffsetDateTime.now().plusSeconds(15));
         booking.setIdempotencyKey(idempotencyKey);
 
         try {
