@@ -1,22 +1,36 @@
 # Backend — Booking System API
 
-Spring Boot REST API for the Scalable Booking System (flights/hotels).
+REST API for the booking system (flight/hotel). Spring Boot 3, Java 17.
+
+## Tech
+
+- **Spring Boot** (Web, JPA, Validation, Cache, Actuator)
+- **PostgreSQL** + Flyway migrations
+- **Redis** (cache)
+
+## Requirements
+
+- Java 17
+- PostgreSQL (port 5433)
+- Redis (port 6379)
+
+Run from **project root** first: `docker compose up -d`.
 
 ## Run
-
-From this folder (`backend/`):
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-Or from project root:
+**Base URL:** `http://localhost:8080`  
+**Health:** `http://localhost:8080/actuator/health`
 
-```bash
-cd backend && ./mvnw spring-boot:run
-```
+## Main endpoints
 
-Before running: start PostgreSQL and Redis with `docker compose up -d` from the **project root** (where `docker-compose.yml` is).
+| Feature   | Path (example)                    |
+|-----------|-----------------------------------|
+| Inventory | `GET /api/inventory`, `GET /api/inventory/availability` |
+| Booking   | `POST /api/bookings`, `GET /api/bookings/{id}` |
+| Pay       | `POST /api/bookings/{id}/pay`     |
 
-API base: `http://localhost:8080`  
-Health: `http://localhost:8080/actuator/health`
+Database is initialized via Flyway; sample data (seeder) is available in dev.
