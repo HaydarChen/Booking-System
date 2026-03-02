@@ -10,12 +10,14 @@ import com.yourname.booking.repository.BookingRepository;
 import com.yourname.booking.repository.InventoryRepository;
 import com.yourname.booking.repository.PaymentRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Service
@@ -54,37 +56,51 @@ public class BookingService {
             return toResponse(existing.get());
         }
 
-        // Load inventory (managed entity)
-        Inventory inventory = inventoryRepository.findById(request.inventoryId())
-                .orElseThrow(() ->
-                        new NotFoundException("Inventory not found"));
+        int maxRetries = 3;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                // Load inventory (managed entity)
+                Inventory inventory = inventoryRepository.findById(request.inventoryId())
+                        .orElseThrow(() ->
+                                new NotFoundException("Inventory not found"));
 
-        // Check stock
-        if (!inventory.canReserve(request.quantity())) {
-            throw new ConflictException("Insufficient inventory");
+                // Check stock
+                if (!inventory.canReserve(request.quantity())) {
+                    throw new ConflictException("Insufficient inventory");
+                }
+
+                // Reserve
+                inventory.reserve(request.quantity());
+
+                // Create booking
+                Booking booking = new Booking();
+                booking.setUserId("demo-user"); // Use auth
+                booking.setInventory(inventory);
+                booking.setQuantity(request.quantity());
+                booking.setStatus(BookingStatus.PENDING_PAYMENT);
+                booking.setExpiresAt(OffsetDateTime.now(ZoneOffset.UTC).plusSeconds(15));
+                booking.setIdempotencyKey(idempotencyKey);
+
+                bookingRepository.save(booking);
+                return toResponse(booking);
+            } catch (ObjectOptimisticLockingFailureException e) {
+                if (attempt == maxRetries) {
+                    throw new ConflictException("Concurrency conflict, please retry");
+                }
+                // small backoff
+                try { Thread.sleep(20L * attempt); } catch (InterruptedException ignored) {}
+            } catch (DataIntegrityViolationException e) {
+                // wait a bit for the "winner" transaction to commit
+                for (int i = 0; i < 5; i++) {
+                    var b = bookingRepository.findByIdempotencyKey(idempotencyKey);
+                    if (b.isPresent()) return toResponse(b.get());
+                    try { Thread.sleep(20); } catch (InterruptedException ignored) {}
+                }
+                throw e;
+            }
         }
 
-        // Reserve
-        inventory.reserve(request.quantity());
-
-        // Create booking
-        Booking booking = new Booking();
-        booking.setUserId("demo-user"); // Use auth
-        booking.setInventory(inventory);
-        booking.setQuantity(request.quantity());
-        booking.setStatus(BookingStatus.PENDING_PAYMENT);
-        booking.setExpiresAt(OffsetDateTime.now().plusSeconds(15));
-        booking.setIdempotencyKey(idempotencyKey);
-
-        try {
-            bookingRepository.save(booking);
-            return toResponse(booking);
-        } catch (DataIntegrityViolationException e) {
-            // Race condition
-            return bookingRepository.findByIdempotencyKey(idempotencyKey)
-                    .map(this::toResponse)
-                    .orElseThrow(() -> e);
-        }
+        throw new ConflictException("Concurrency conflict, please retry");
     }
 
     @Transactional(readOnly = true)
