@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.yourname.booking.config.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -44,6 +46,7 @@ public class BookingService {
         return page.map(this::toResponse);
     }
 
+    @CacheEvict(cacheNames = CacheConfig.INVENTORY_AVAILABILITY, key = "#request.inventoryId()")
     @Transactional
     public BookingResponse createBooking(CreateBookingRequest request, String idempotencyKey) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {

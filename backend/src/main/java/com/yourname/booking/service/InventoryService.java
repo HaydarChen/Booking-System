@@ -6,10 +6,12 @@ import com.yourname.booking.entity.Inventory;
 import com.yourname.booking.entity.InventoryType;
 import com.yourname.booking.exception.NotFoundException;
 import com.yourname.booking.repository.InventoryRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.yourname.booking.config.CacheConfig;
 
 @Service
 public class InventoryService {
@@ -29,6 +31,7 @@ public class InventoryService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.INVENTORY_AVAILABILITY, key = "#root.args[0]")
     public AvailabilityResponse getAvailability(Long id) {
         Inventory inv = inventoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Inventory not found: "+ id));
@@ -46,4 +49,6 @@ public class InventoryService {
                 inv.getUpdatedAt()
         );
     }
+
+
 }

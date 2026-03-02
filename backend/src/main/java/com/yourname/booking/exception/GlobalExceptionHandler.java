@@ -1,6 +1,7 @@
 package com.yourname.booking.exception;
 
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -54,5 +55,12 @@ public class GlobalExceptionHandler {
         Map<String, Object> b = body(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid request body");
         b.put("fields", fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(b);
+    }
+
+    @ExceptionHandler(RedisConnectionFailureException.class)
+    public ResponseEntity<?> redisUnavailable(RedisConnectionFailureException e) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(body(HttpStatus.SERVICE_UNAVAILABLE, "SERVICE_UNAVAILABLE",
+                        "Cache unavailable. Ensure Redis is running (e.g. docker compose up -d)."));
     }
 }
