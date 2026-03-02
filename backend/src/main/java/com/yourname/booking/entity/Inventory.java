@@ -67,7 +67,7 @@ public class Inventory {
 
     public void release(int qty) {
         if (qty <= 0) return;
-        this.available = Math.min(this.totalCapacity, this.available + qty);
+        this.available += qty;
     }
 
     // ===== getters/setters (generate via IDE) =====
