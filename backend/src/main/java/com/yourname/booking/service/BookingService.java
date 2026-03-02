@@ -78,14 +78,13 @@ public class BookingService {
 
         try {
             bookingRepository.save(booking);
+            return toResponse(booking);
         } catch (DataIntegrityViolationException e) {
             // Race condition
             return bookingRepository.findByIdempotencyKey(idempotencyKey)
                     .map(this::toResponse)
                     .orElseThrow(() -> e);
         }
-
-        return toResponse(booking);
     }
 
     @Transactional(readOnly = true)
@@ -131,17 +130,26 @@ public class BookingService {
         }
 
         // Payment idempotency by header key
+        var existingByKey = paymentRepository.findByIdempotencyKey(paymentIdempotencyKey);
+        if (existingByKey.isPresent()) {
+            Payment payment = existingByKey.get();
+            if (!payment.getBooking().getId().equals(booking.getId())) {
+                throw new ConflictException("Idempotency-Key already used for another booking");
+            }
+            booking.setStatus(BookingStatus.CONFIRMED);
+            return new PayBookingResponse(toResponse(booking), toPaymentResponse(payment));
+        }
+
         // If providerRef already exist, treat as idempotent retry
         var existingByProvider = paymentRepository.findByProviderRef(providerRef);
         if (existingByProvider.isPresent()) {
             Payment payment = existingByProvider.get();
 
             // ensure it belongs to same booking
-            if (payment.getBooking().getId().equals(bookingId)) {
+            if (!payment.getBooking().getId().equals(bookingId)) {
                 throw new ConflictException("providerRef already used for another booking");
             }
 
-            // ensure booking confirmed
             booking.setStatus(BookingStatus.CONFIRMED);
             return new PayBookingResponse(toResponse(booking), toPaymentResponse(payment));
         }
@@ -153,11 +161,18 @@ public class BookingService {
         payment.setStatus(PaymentStatus.SUCCESS);
         payment.setPaidAt(OffsetDateTime.now());
         payment.setAmount(java.math.BigDecimal.ZERO);
+        payment.setIdempotencyKey(paymentIdempotencyKey);
 
-        paymentRepository.save(payment);
+        try {
+            paymentRepository.save(payment);
+        } catch (DataIntegrityViolationException e) {
+            Payment p = paymentRepository.findByIdempotencyKey(paymentIdempotencyKey)
+                    .orElseThrow(() -> e);
+            booking.setStatus(BookingStatus.CONFIRMED);
+            return new PayBookingResponse(toResponse(booking), toPaymentResponse(p));
+        };
 
         booking.setStatus(BookingStatus.CONFIRMED);
-
         return new PayBookingResponse(toResponse(booking), toPaymentResponse(payment));
     }
 

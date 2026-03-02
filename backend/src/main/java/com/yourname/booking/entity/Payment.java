@@ -42,6 +42,9 @@ public class Payment {
     @Column(name = "paid_at")
     private OffsetDateTime paidAt;
 
+    @Column(name="idempotency_key", length=120)
+    private String idempotencyKey;
+
     // ===== getters/setters =====
     public Long getId() { return id; }
     public Booking getBooking() { return booking; }
@@ -61,4 +64,7 @@ public class Payment {
     public void setPaidAt(OffsetDateTime paidAt) {
         this.paidAt = paidAt;
     }
+
+    public String getIdempotencyKey() { return idempotencyKey; }
+    public void setIdempotencyKey(String idempotencyKey) {  this.idempotencyKey = idempotencyKey; }
 }
